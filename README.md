@@ -1,4 +1,4 @@
-# claude-notice
+# claude-code-toast
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
