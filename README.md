@@ -1,5 +1,7 @@
 # claude-notice
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 WSL2 上で動く Claude Code から、ホスト Windows にトースト通知を表示するための設定集です。
 応答完了・権限確認待ち・アイドル状態を [BurntToast](https://github.com/Windos/BurntToast) でサイレント通知します。
 
@@ -69,5 +71,14 @@ WSL2 上で動く Claude Code から、ホスト Windows にトースト通知�
 .
 ├── .claude/
 │   └── settings.json   # Claude Code の hooks 設定
+├── LICENSE
 └── README.md
 ```
+
+## コントリビュート
+
+バグ報告や改善提案は Issue / Pull Request で歓迎します。気軽にどうぞ。
+
+## ライセンス
+
+[MIT License](LICENSE) で公開しています。
