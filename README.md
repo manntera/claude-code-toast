@@ -20,11 +20,34 @@ WSL2 上で動く Claude Code から、ホスト Windows にトースト通知�
 - Windows 上の WSL2 で動く Claude Code
 - ホスト Windows に PowerShell モジュール [BurntToast](https://www.powershellgallery.com/packages/BurntToast) がインストール済み
 
-BurntToast のインストール（Windows 側 PowerShell）:
+## 使う前にやること（初回セットアップ）
 
-```powershell
-Install-Module -Name BurntToast -Scope CurrentUser
-```
+このプロジェクトを使い始める前に、**Windows 側で一度だけ** BurntToast のインストールを行ってください。WSL 側からは自動でインストールできないため、必ず Windows のスタートメニューから「Windows PowerShell」を起動して実行します。
+
+1. Windows PowerShell を開く（管理者権限は不要）
+2. 次のコマンドを実行する
+
+   ```powershell
+   Install-Module -Name BurntToast -Scope CurrentUser -Force
+   ```
+
+3. 初回実行時は次のような **NuGet プロバイダーのインストール確認** が表示されます。`Y` を入力して進めてください。
+
+   ```text
+   続行するには NuGet プロバイダーが必要です
+   PowerShellGet で NuGet ベースのリポジトリを操作するには、'2.8.5.201' 以降のバージョンの
+   NuGet プロバイダーが必要です。…
+   今すぐ PowerShellGet で NuGet プロバイダーをインストールしてインポートしますか?
+   [Y] はい(Y)  [N] いいえ(N)  [S] 中断(S)  [?] ヘルプ (既定値は "Y"): Y
+   ```
+
+4. プロンプトが戻ってきたら完了です。動作確認は以下のワンライナーで行えます。テスト通知が表示されれば成功です。
+
+   ```powershell
+   Import-Module BurntToast; New-BurntToastNotification -Text 'Claude Code', 'セットアップ完了' -Silent
+   ```
+
+> **注意:** PowerShell 7（`pwsh`）ではなく、Windows 標準の **Windows PowerShell（`powershell.exe`）** で実行してください。`.claude/settings.json` の hooks は `powershell.exe` を呼び出します。
 
 ## 使い方
 
