@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "claude-code-toast",
+  "displayName": "Claude Code Toast",
+  "version": "2.0.0",
+  "description": "WSL2 の Claude Code からホスト Windows へトースト通知と任意のサウンドを出す",
+  "author": {
+    "name": "manntera",
+    "url": "https://github.com/manntera"
+  },
+  "keywords": ["wsl", "wsl2", "windows", "notification", "toast", "hooks", "burnttoast"],
+  "hooks": "./hooks/hooks.json"
+}
