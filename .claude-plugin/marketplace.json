@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "wsl-notify-tools",
+  "owner": {
+    "name": "manntera",
+    "url": "https://github.com/manntera"
+  },
+  "description": "WSL2 から Windows へ通知を出す Claude Code プラグイン集",
+  "plugins": [
+    {
+      "name": "claude-code-toast",
+      "source": "./plugins/claude-code-toast",
+      "description": "WSL2 の Claude Code からホスト Windows へトースト通知と任意のサウンドを出す"
+    }
+  ]
+}

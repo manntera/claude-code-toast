@@ -2,83 +2,105 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-WSL2 上で動く Claude Code から、ホスト Windows にトースト通知を表示するための設定集です。
-応答完了・権限確認待ち・アイドル状態を [BurntToast](https://github.com/Windos/BurntToast) でサイレント通知します。
+WSL2 上で動く Claude Code から、ホスト Windows にトースト通知を出す Claude Code プラグインです。
+応答完了・承認待ち・エラー停止などを [BurntToast](https://github.com/Windos/BurntToast) でサイレント通知し、
+イベントごとに任意の wav を鳴らし分けられます。
+
+「AI の応答が終わったこと」だけでなく、**承認待ちやエラーで処理が止まっていることに気づけない問題**を解消するのが目的です。
 
 ## 通知されるイベント
 
-`.claude/settings.json` の hooks で以下を購読しています。
+| イベント | 通知メッセージ | サウンドキー | 発火タイミング |
+| --- | --- | --- | --- |
+| `SessionStart` | セッション開始 | `start` | セッションの開始・再開 |
+| `Stop` | 応答完了 | `ok` | Claude の応答が完了した |
+| `StopFailure` | エラーで停止 | `error` | API エラーでターンが終了した（このとき `Stop` は発火しない） |
+| `PermissionDenied` | ツール実行が拒否された | `no` | auto mode がツール実行を拒否した |
+| `PreCompact` | コンテキストを圧縮中 | `clean` | コンテキスト圧縮の直前 |
+| `SessionEnd` | セッション終了 | `end` | セッションの終了 |
+| `Notification` (`permission_prompt`) | ツール実行の承認待ち | `halt` | ツール実行の承認を求めて停止した |
+| `Notification` (`agent_needs_input`) | エージェントが入力待ち | `info` | サブエージェント／チームメイトが入力を求めた |
+| `Notification` (`elicitation_dialog`) | MCP が入力待ち | `notice` | MCP サーバーが入力を求めた |
+| `Notification` (`elicitation_url_dialog`) | MCP が URL 認証待ち | `warn` | MCP サーバーが URL を開いての認証を求めた |
 
-| イベント | 通知メッセージ | 用途 |
-| --- | --- | --- |
-| `Stop` | 応答完了 | Claude の応答が完了したとき |
-| `Notification` (`permission_prompt`) | ツール実行の承認待ち | ツール実行の承認が必要なとき |
-| `Notification` (`idle_prompt`) | アイドル中（入力待ち） | 入力待ちでアイドル状態になったとき |
+トーストはすべて `-Silent` 指定です。音は BurntToast ではなくプラグイン側で鳴らすため、**サウンドを設定しなければ通知音は一切鳴りません**。
 
-すべて `-Silent` 指定で、音は鳴らさず通知センターに表示します。
+`PostToolUseFailure` や `SubagentStop` はツール実行のたびに発火して過剰になるため、あえて購読していません。必要なら `hooks/hooks.json` に追加してください。
 
 ## 必要環境
 
 - Windows 上の WSL2 で動く Claude Code
 - ホスト Windows に PowerShell モジュール [BurntToast](https://www.powershellgallery.com/packages/BurntToast) がインストール済み
 
-## 使う前にやること（初回セットアップ）
+## セットアップ
 
-このプロジェクトを使い始める前に、**Windows 側で一度だけ** BurntToast のインストールを行ってください。WSL 側からは自動でインストールできないため、必ず Windows のスタートメニューから「Windows PowerShell」を起動して実行します。
+### 1. BurntToast を入れる（Windows 側で一度だけ）
 
-1. Windows PowerShell を開く（管理者権限は不要）
-2. 次のコマンドを実行する
+WSL 側からは自動でインストールできません。Windows のスタートメニューから「Windows PowerShell」を起動して実行してください。
 
-   ```powershell
-   Install-Module -Name BurntToast -Scope CurrentUser -Force
-   ```
-
-3. 初回実行時は次のような **NuGet プロバイダーのインストール確認** が表示されます。`Y` を入力して進めてください。
-
-   ```text
-   続行するには NuGet プロバイダーが必要です
-   PowerShellGet で NuGet ベースのリポジトリを操作するには、'2.8.5.201' 以降のバージョンの
-   NuGet プロバイダーが必要です。…
-   今すぐ PowerShellGet で NuGet プロバイダーをインストールしてインポートしますか?
-   [Y] はい(Y)  [N] いいえ(N)  [S] 中断(S)  [?] ヘルプ (既定値は "Y"): Y
-   ```
-
-4. プロンプトが戻ってきたら完了です。動作確認は以下のワンライナーで行えます。テスト通知が表示されれば成功です。
-
-   ```powershell
-   Import-Module BurntToast; New-BurntToastNotification -Text 'Claude Code', 'セットアップ完了' -Silent
-   ```
-
-> **注意:** PowerShell 7（`pwsh`）ではなく、Windows 標準の **Windows PowerShell（`powershell.exe`）** で実行してください。`.claude/settings.json` の hooks は `powershell.exe` を呼び出します。
-
-## 使い方
-
-このリポジトリを Claude Code のプロジェクトとして開けば、`.claude/settings.json` が自動で読み込まれ、hooks が有効になります。
-
-ユーザー全体に適用したい場合は `.claude/settings.json` の内容を `~/.claude/settings.json` にマージしてください。
-
-## 仕組み
-
-各 hook は WSL から `powershell.exe` を呼び出して BurntToast を実行します。サードパーティモジュールを安定して動かすため、以下を明示的に指定しています。
-
-- `-ExecutionPolicy Bypass` — モジュール読み込みのポリシー回避
-- `Import-Module BurntToast` — モジュールの明示ロード
-- `async: true` — Claude Code 側を待たせずに通知を投げる
-
-## ファイル構成
-
-```
-.
-├── .claude/
-│   └── settings.json   # Claude Code の hooks 設定
-├── LICENSE
-└── README.md
+```powershell
+Install-Module -Name BurntToast -Scope CurrentUser -Force
 ```
 
-## コントリビュート
+初回は NuGet プロバイダーのインストール確認が出るので `Y` で進めます。次のワンライナーでテスト通知が出れば成功です。
 
-バグ報告や改善提案は Issue / Pull Request で歓迎します。気軽にどうぞ。
+```powershell
+Import-Module BurntToast; New-BurntToastNotification -Text 'Claude Code', 'セットアップ完了' -Silent
+```
+
+> **注意:** PowerShell 7（`pwsh`）ではなく、Windows 標準の **Windows PowerShell（`powershell.exe`）** を使ってください。プラグインは `powershell.exe` を呼び出します。
+
+### 2. プラグインを入れる
+
+```
+/plugin marketplace add manntera/claude-code-toast
+/plugin install claude-code-toast@wsl-notify-tools
+```
+
+これだけでトースト通知が有効になります。`~/.claude/settings.json` の既存設定（`permissions` や `model` など）には触れません。
+
+### 3. サウンドを設定する（任意）
+
+`~/.claude/notify-toast.conf` を作り、サウンドの置き場と、キーごとの wav ファイル名を書きます。
+このファイルはプラグインに含まれません。**どの音を使うかは各自の環境に閉じます。**
+
+```sh
+# ~/.claude/notify-toast.conf
+# VOICE_DIR には %USERPROFILE% などの Windows 環境変数を書ける
+VOICE_DIR='%WINDIR%\Media'
+
+VOICE_ok='Windows Notify System Generic.wav'
+VOICE_error='Windows Critical Stop.wav'
+VOICE_halt='Windows Notify Messaging.wav'
+```
+
+- 書いたキーだけ音が鳴ります。未設定のキーはトーストのみです
+- パスは PowerShell の `ExpandEnvironmentVariables` で展開されるため、**Windows のユーザー名が違う PC でもこのファイルをそのまま持ち回れます**
+- 別の場所に置きたい場合は環境変数 `CLAUDE_TOAST_CONF` でパスを指定できます
+
+サウンドファイルを配布物に含める場合は、その音源のライセンスを必ず確認してください。
+**このリポジトリには音源を一切同梱していません。**
+
+## 動作確認
+
+プラグインのスクリプトは単体でも実行できます。
+
+```sh
+~/.claude/plugins/*/claude-code-toast/scripts/notify-toast.sh '確認' ok
+```
+
+## 構成
+
+```
+.claude-plugin/marketplace.json          マーケットプレイス定義
+plugins/claude-code-toast/
+├── .claude-plugin/plugin.json           プラグイン定義
+├── hooks/hooks.json                     どのイベントで何を通知するか
+└── scripts/notify-toast.sh              トースト表示と wav 再生（音源の情報は持たない）
+```
+
+イベントと通知文言を変えたいときは `hooks/hooks.json` を、通知の出し方そのものを変えたいときは `scripts/notify-toast.sh` を編集してください。
 
 ## ライセンス
 
-[MIT License](LICENSE) で公開しています。
+MIT License. [LICENSE](LICENSE) を参照してください。
